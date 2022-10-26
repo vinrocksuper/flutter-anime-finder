@@ -169,23 +169,41 @@ class _MyHomePageState extends State<MyHomePage> {
                         items: numResults,
                         value: resultsToShow,
                         onChanged: (userSelected) {
-                          // needs a nullable named param
                           setState(() {
                             resultsToShow = userSelected;
                           });
                         },
                       ),
                       SizedBox(
-                        height: 10,
+                        height: 5,
                       ),
-                      ToggleButtons(
-                        isSelected: selectedRatings,
-                        onPressed: ((index) {
-                          setState(() {
-                            selectedRatings[index] = !selectedRatings[index];
-                          });
-                        }),
-                        children: ratings,
+                      Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text("Ratings")),
+                      SizedBox(
+                        height: 5,
+                      ),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          return ToggleButtons(
+                            constraints: BoxConstraints.expand(
+                                width: constraints.maxWidth / 5.1),
+                            isSelected: selectedRatings,
+                            borderColor: Colors.black,
+                            selectedBorderColor: Colors.black,
+                            borderRadius: BorderRadius.circular(5.0),
+                            onPressed: ((index) {
+                              setState(() {
+                                selectedRatings[index] =
+                                    !selectedRatings[index];
+                              });
+                            }),
+                            children: ratings,
+                          );
+                        },
+                      ),
+                      SizedBox(
+                        height: 5,
                       ),
                       Row(
                         children: [
