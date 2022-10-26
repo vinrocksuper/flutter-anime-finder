@@ -64,24 +64,9 @@ class _MyHomePageState extends State<MyHomePage> {
       value: '100',
       child: Text('100'),
     ),
-  ];
-
-  var ratingsDropdown = [
     DropdownMenuItem(
-      value: 'g',
-      child: Text('G'),
-    ),
-    DropdownMenuItem(
-      value: 'pg',
-      child: Text('PG'),
-    ),
-    DropdownMenuItem(
-      value: 'pg13',
-      child: Text('PG-13'),
-    ),
-    DropdownMenuItem(
-      value: 'r17',
-      child: Text('R'),
+      value: '100',
+      child: Text('100'),
     ),
   ];
 
@@ -102,7 +87,6 @@ class _MyHomePageState extends State<MyHomePage> {
   ];
 
   String? resultsToShow = '25';
-  String? ratingSelected = 'g';
 
   int index = 0;
   int pageNumber = 1;
@@ -141,8 +125,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 )
               : PreferredSize(
-                  child: Container(),
                   preferredSize: Size.fromHeight(6),
+                  child: Container(),
                 ),
         ),
         body: Padding(
@@ -187,37 +171,21 @@ class _MyHomePageState extends State<MyHomePage> {
                         onChanged: (userSelected) {
                           // needs a nullable named param
                           setState(() {
-                            resultsToShow = userSelected as String?;
+                            resultsToShow = userSelected;
                           });
                         },
                       ),
                       SizedBox(
                         height: 10,
                       ),
-                      DropdownButtonFormField(
-                        decoration: InputDecoration(
-                          label: Text('Rating'),
-                          fillColor: Colors.white,
-                          filled: true,
-                          border: OutlineInputBorder(),
-                        ),
-                        items: ratingsDropdown,
-                        value: ratingSelected,
-                        onChanged: (userSelected) {
-                          // needs a nullable named param
-                          setState(() {
-                            ratingSelected = userSelected as String?;
-                          });
-                        },
-                      ),
                       ToggleButtons(
-                        children: ratings,
                         isSelected: selectedRatings,
                         onPressed: ((index) {
                           setState(() {
                             selectedRatings[index] = !selectedRatings[index];
                           });
                         }),
+                        children: ratings,
                       ),
                       Row(
                         children: [
@@ -325,21 +293,23 @@ class _MyHomePageState extends State<MyHomePage> {
                 BottomNavigationBar(
                   currentIndex: index,
                   onTap: (value) {
-                    setState(() {
-                      index = value;
-                      switch (index) {
-                        case 0:
-                          clearLists();
-                          findSeasonal();
-                          break;
-                        case 1:
-                          clearLists();
-                          break;
-                        case 2:
-                          clearLists();
-                          break;
-                      }
-                    });
+                    if (!isSearching) {
+                      setState(() {
+                        index = value;
+                        switch (index) {
+                          case 0:
+                            clearLists();
+                            findSeasonal();
+                            break;
+                          case 1:
+                            clearLists();
+                            break;
+                          case 2:
+                            clearLists();
+                            break;
+                        }
+                      });
+                    }
                   },
                   items: [
                     BottomNavigationBarItem(
@@ -385,61 +355,81 @@ class _MyHomePageState extends State<MyHomePage> {
 
     var jData = await getAPIResponse(customURL);
 
-    for (int i = 0; i < jData["data"].length; i++) {
-      setState(() {
-        urlList.add(jData["data"][i]["images"]["jpg"]["image_url"]);
-        titleList.add(jData["data"][i]["title"]);
-      });
-    }
+    if (jData["data"] != null) {
+      for (int i = 0; i < jData["data"].length; i++) {
+        setState(() {
+          urlList.add(jData["data"][i]["images"]["jpg"]["image_url"]);
+          titleList.add(jData["data"][i]["title"]);
+        });
+      }
 
-    if (jData["pagination"]["has_next_page"]) {
-      pageNumber++;
-      await findSeasonal();
-    } else {
-      pageNumber = 1;
-      setState(() {
-        isSearching = false;
-      });
+      if (jData["pagination"]["has_next_page"]) {
+        pageNumber++;
+        await findSeasonal();
+      } else {
+        pageNumber = 1;
+        setState(() {
+          isSearching = false;
+        });
+      }
     }
   }
 
+  bool shouldDoDefault = true;
   Future findCustom({ratingQuery}) async {
     String customURL = searchAPI.replaceAll('{0}', _field01.text);
+
     if (ratingQuery != null) {
       customURL = customURL.replaceAll('{1}', ratingQuery);
+    } else {
+      customURL = customURL.replaceAll('&rating={1}', '');
     }
 
-    // if the rating query is null
-    if (ratingQuery == null) { 
+    // if the rating query is null (which is the first run)
+    if (ratingQuery == null) {
       for (int i = 0; i < selectedRatings.length; i++) {
         if (selectedRatings[i]) {
-          // print(ratings[i].data);
+          shouldDoDefault = false;
           await findCustom(ratingQuery: ratings[i].data);
         }
       }
     }
-
-    customURL = customURL.replaceAll('{2}', pageNumber.toString());
-    setState(() {
-      isSearching = true;
-    });
-    var jData = await getAPIResponse(customURL);
-
-    for (int i = 0; i < jData["data"].length; i++) {
+    if (shouldDoDefault || ratingQuery != null) {
+      customURL = customURL.replaceAll('{2}', pageNumber.toString());
       setState(() {
-        urlList.add(jData["data"][i]["images"]["jpg"]["image_url"]);
-        titleList.add(jData["data"][i]["title"]);
+        isSearching = true;
       });
-    }
-    if (jData["pagination"]["has_next_page"] &&
-        pageNumber < (int.parse(resultsToShow!) / 25)) {
-      pageNumber++;
-      await findCustom();
-    } else {
-      pageNumber = 1;
-      setState(() {
-        isSearching = false;
-      });
+      var jData = await getAPIResponse(customURL);
+
+      if (jData["data"] != null) {
+        for (int i = 0; i < jData["data"].length; i++) {
+          setState(() {
+            urlList.add(jData["data"][i]["images"]["jpg"]["image_url"]);
+            titleList.add(jData["data"][i]["title"]);
+          });
+        }
+        if (jData["pagination"]["has_next_page"] &&
+            pageNumber < (int.parse(resultsToShow!) / 25) &&
+            urlList.length < int.parse(resultsToShow!)) {
+          pageNumber++;
+
+          if (ratingQuery != null) {
+            await findCustom(ratingQuery: ratingQuery);
+          } else {
+            await findCustom();
+          }
+        } else {
+          pageNumber = 1;
+          if (urlList.length > int.parse(resultsToShow!)) {
+            urlList.removeRange(int.parse(resultsToShow!), urlList.length);
+            titleList.removeRange(int.parse(resultsToShow!), titleList.length);
+          }
+          setState(() {
+            isSearching = false;
+          });
+        }
+      }
+      return;
     }
   }
 
@@ -452,9 +442,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void clearLists() {
-    // _field01.clear();
     setState(() {
-      // resultsToShow = '1';
+      shouldDoDefault = true;
       urlList.clear();
       titleList.clear();
       creatorList.clear();
