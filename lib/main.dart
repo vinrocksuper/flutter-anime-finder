@@ -43,9 +43,15 @@ class _MyHomePageState extends State<MyHomePage> {
   String seasonalAPI = 'https://api.jikan.moe/v4/seasons/now?page={0}';
   String searchAPI = 'https://api.jikan.moe/v4/anime?q={0}&rating={1}&page={2}';
 
+  List<String> imageList = [];
   List<String> urlList = [];
   List<String> titleList = [];
-  List<String> creatorList = [];
+  List<String> blurbList = [];
+  List<int> malIDList = [];
+
+  List<bool> favoritedResults = [];
+
+  List<Map> favorites = [];
 
   var numResults = [
     DropdownMenuItem(
@@ -59,10 +65,6 @@ class _MyHomePageState extends State<MyHomePage> {
     DropdownMenuItem(
       value: '75',
       child: Text('75'),
-    ),
-    DropdownMenuItem(
-      value: '100',
-      child: Text('100'),
     ),
     DropdownMenuItem(
       value: '100',
@@ -237,15 +239,18 @@ class _MyHomePageState extends State<MyHomePage> {
                           SizedBox(
                             width: 15,
                           ),
-                          if (urlList.isNotEmpty)
-                            Text('Showing ${urlList.length} results'),
+                          if (imageList.isNotEmpty)
+                            Text('Showing ${imageList.length} results'),
                         ],
+                      ),
+                      SizedBox(
+                        height: 5,
                       ),
                     ],
                   ),
                 Expanded(
                   child: GridView.builder(
-                    itemCount: urlList.length,
+                    itemCount: imageList.length,
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
                       crossAxisSpacing: 10,
@@ -265,40 +270,89 @@ class _MyHomePageState extends State<MyHomePage> {
                                       content: Column(
                                         children: [
                                           CachedNetworkImage(
-                                            imageUrl: urlList[index],
+                                            imageUrl: imageList[index],
                                             placeholder: (context, url) =>
                                                 const CircularProgressIndicator(),
                                           ),
                                           SizedBox(
                                             height: 20,
                                           ),
-                                          Text(titleList[index]),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Container(
+                                                  alignment:
+                                                      Alignment.topCenter,
+                                                  child: InkWell(
+                                                    onTap: () async {
+                                                      if (!await launchUrl(
+                                                          Uri.parse(
+                                                              urlList[index]),
+                                                          mode: LaunchMode
+                                                              .externalApplication)) {}
+                                                    },
+                                                    child: Text(
+                                                      titleList[index],
+                                                      style: TextStyle(
+                                                        color: Colors.blue,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              if (!favoritedResults[index])
+                                                Expanded(
+                                                  child: Container(
+                                                      alignment:
+                                                          Alignment.topRight,
+                                                      child: IconButton(
+                                                        icon: Icon(
+                                                          Icons.star_border,
+                                                          color: Colors
+                                                              .orangeAccent,
+                                                        ),
+                                                        onPressed: () {
+                                                          favoritedResults[
+                                                              index] = true;  // TODO SET STATE INSTEAD
+                                                        },
+                                                      )),
+                                                ),
+                                              if (favoritedResults[index])
+                                                Expanded(
+                                                  child: Container(
+                                                      alignment:
+                                                          Alignment.topRight,
+                                                      child: IconButton(
+                                                        icon: Icon(
+                                                          Icons.star,
+                                                          color: Colors
+                                                              .orangeAccent,
+                                                        ),
+                                                        onPressed: () {
+                                                          favoritedResults[
+                                                              index] = false; // TODO SET STATE INSTEAD
+                                                        },
+                                                      )),
+                                                ),
+                                            ],
+                                          ),
                                           SizedBox(
                                             height: 5,
                                           ),
-                                          InkWell(
-                                            onTap: () async {
-                                              if (!await launchUrl(
-                                                  Uri.parse(urlList[index]),
-                                                  mode: LaunchMode
-                                                      .externalApplication)) {}
-                                            },
-                                            child: Text(
-                                              urlList[index],
-                                              style: TextStyle(
-                                                color: Colors.blue,
-                                                decoration:
-                                                    TextDecoration.underline,
-                                              ),
-                                            ),
-                                          )
+                                          SizedBox(
+                                            height: 5,
+                                          ),
+                                          Expanded(
+                                              child: SingleChildScrollView(
+                                                  child:
+                                                      Text(blurbList[index]))),
                                         ],
                                       ),
                                     );
                                   });
                             },
                             child: CachedNetworkImage(
-                              imageUrl: urlList[index],
+                              imageUrl: imageList[index],
                               placeholder: (context, url) =>
                                   const CircularProgressIndicator(),
                             ),
@@ -352,7 +406,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       backgroundColor: Colors.amberAccent,
                     ),
                   ],
-                )
+                ),
               ],
             ),
           ),
@@ -376,8 +430,17 @@ class _MyHomePageState extends State<MyHomePage> {
     if (jData["data"] != null) {
       for (int i = 0; i < jData["data"].length; i++) {
         setState(() {
-          urlList.add(jData["data"][i]["images"]["jpg"]["image_url"]);
+          urlList.add(jData["data"][i]['url']);
+          imageList.add(jData["data"][i]["images"]["jpg"]["image_url"]);
           titleList.add(jData["data"][i]["title"]);
+          if (jData["data"][i]["synopsis"] != null) {
+            blurbList.add(jData["data"][i]["synopsis"]);
+          }
+          if (jData["data"][i]["mal_id"] != null) {
+            malIDList.add(jData["data"][i]["mal_id"]);
+          }
+
+          favoritedResults.add(false);
         });
       }
 
@@ -422,13 +485,21 @@ class _MyHomePageState extends State<MyHomePage> {
       if (jData["data"] != null) {
         for (int i = 0; i < jData["data"].length; i++) {
           setState(() {
-            urlList.add(jData["data"][i]["images"]["jpg"]["image_url"]);
+            urlList.add(jData["data"][i]['url']);
+            imageList.add(jData["data"][i]["images"]["jpg"]["image_url"]);
             titleList.add(jData["data"][i]["title"]);
+            if (jData["data"][i]["synopsis"] != null) {
+              blurbList.add(jData["data"][i]["synopsis"]);
+            }
+            if (jData["data"][i]["mal_id"] != null) {
+              malIDList.add(jData["data"][i]["mal_id"]);
+            }
+            favoritedResults.add(false);
           });
         }
         if (jData["pagination"]["has_next_page"] &&
             pageNumber < (int.parse(resultsToShow!) / 25) &&
-            urlList.length < int.parse(resultsToShow!)) {
+            imageList.length < int.parse(resultsToShow!)) {
           pageNumber++;
 
           if (ratingQuery != null) {
@@ -438,8 +509,8 @@ class _MyHomePageState extends State<MyHomePage> {
           }
         } else {
           pageNumber = 1;
-          if (urlList.length > int.parse(resultsToShow!)) {
-            urlList.removeRange(int.parse(resultsToShow!), urlList.length);
+          if (imageList.length > int.parse(resultsToShow!)) {
+            imageList.removeRange(int.parse(resultsToShow!), imageList.length);
             titleList.removeRange(int.parse(resultsToShow!), titleList.length);
           }
           setState(() {
@@ -462,9 +533,32 @@ class _MyHomePageState extends State<MyHomePage> {
   void clearLists() {
     setState(() {
       shouldDoDefault = true;
-      urlList.clear();
+      imageList.clear();
       titleList.clear();
-      creatorList.clear();
+      blurbList.clear();
+      malIDList.clear();
+      favoritedResults.clear();
     });
+  }
+}
+
+class favoritedButton extends StatelessWidget {
+  const favoritedButton({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+          alignment: Alignment.topRight,
+          child: IconButton(
+            icon: Icon(
+              Icons.star,
+              color: Colors.orangeAccent,
+            ),
+            onPressed: () {},
+          )),
+    );
   }
 }
