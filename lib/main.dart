@@ -4,7 +4,9 @@ import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_switch/flutter_switch.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 void main() {
@@ -43,15 +45,13 @@ class _MyHomePageState extends State<MyHomePage> {
   String seasonalAPI = 'https://api.jikan.moe/v4/seasons/now?page={0}';
   String searchAPI = 'https://api.jikan.moe/v4/anime?q={0}&rating={1}&page={2}';
 
-  List<String> imageList = [];
-  List<String> urlList = [];
-  List<String> titleList = [];
   List<String> blurbList = [];
   List<int> malIDList = [];
-
   List<bool> favoritedResults = [];
-
   List<Map> favorites = [];
+  List<Map> currentData = [];
+
+  late SharedPreferences prefs;
 
   var numResults = [
     DropdownMenuItem(
@@ -80,6 +80,12 @@ class _MyHomePageState extends State<MyHomePage> {
     Text('rx'),
   ];
 
+  static const List<Text> ratingSFW = <Text>[
+    Text('g'),
+    Text('pg'),
+    Text('pg13'),
+  ];
+
   final List<bool> selectedRatings = <bool>[
     false,
     false,
@@ -87,6 +93,14 @@ class _MyHomePageState extends State<MyHomePage> {
     false,
     false,
   ];
+
+  final List<bool> selectedRatingsSFW = <bool>[
+    false,
+    false,
+    false,
+  ];
+
+  bool showNSFW = false;
 
   String? resultsToShow = '25';
 
@@ -104,7 +118,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void init() async {
+    prefs = await SharedPreferences.getInstance();
+    // await prefs.clear();
+    loadFavorites();
+    clearLists();
     findSeasonal();
+    loadLastText();
   }
 
   @override
@@ -113,9 +132,45 @@ class _MyHomePageState extends State<MyHomePage> {
         appBar: AppBar(
           title: Text(widget.title),
           actions: [
-            Icon(
-              Icons.settings,
-            ),
+            IconButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return StatefulBuilder(builder: (context, setState) {
+                      return AlertDialog(
+                        content: Column(
+                          children: [
+                            Center(
+                              child: Text(
+                                  "Anime Finder by Vincent Li for IGME 340"),
+                            ),
+                            Row(
+                              children: [
+                                Text("Enable NSFW Results?"),
+                                SizedBox(
+                                  width: 15,
+                                ),
+                                FlutterSwitch(
+                                    value: showNSFW,
+                                    onToggle: (val) {
+                                      setState(() {
+                                        showNSFW = val;
+                                      });
+                                    }),
+                              ],
+                            )
+                          ],
+                        ),
+                      );
+                    });
+                  },
+                );
+              },
+              icon: Icon(
+                Icons.settings,
+              ),
+            )
           ],
           bottom: isSearching
               ? PreferredSize(
@@ -189,8 +244,11 @@ class _MyHomePageState extends State<MyHomePage> {
                         builder: (context, constraints) {
                           return ToggleButtons(
                             constraints: BoxConstraints.expand(
-                                width: constraints.maxWidth / 5.1),
-                            isSelected: selectedRatings,
+                                width: showNSFW
+                                    ? constraints.maxWidth / 5.1
+                                    : constraints.maxWidth / 3.1),
+                            isSelected:
+                                showNSFW ? selectedRatings : selectedRatingsSFW,
                             borderColor: Colors.black,
                             selectedBorderColor: Colors.black,
                             borderRadius: BorderRadius.circular(5.0),
@@ -200,7 +258,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                     !selectedRatings[index];
                               });
                             }),
-                            children: ratings,
+                            children: showNSFW ? ratings : ratingSFW,
                           );
                         },
                       ),
@@ -224,6 +282,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               if (_formKey.currentState!.validate()) {
                                 clearLists();
                                 findCustom();
+                                saveLastText();
                               }
                             },
                             child: Row(
@@ -239,8 +298,8 @@ class _MyHomePageState extends State<MyHomePage> {
                           SizedBox(
                             width: 15,
                           ),
-                          if (imageList.isNotEmpty)
-                            Text('Showing ${imageList.length} results'),
+                          if (currentData.isNotEmpty)
+                            Text('Showing ${currentData.length} results'),
                         ],
                       ),
                       SizedBox(
@@ -250,7 +309,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 Expanded(
                   child: GridView.builder(
-                    itemCount: imageList.length,
+                    itemCount: currentData.length,
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
                       crossAxisSpacing: 10,
@@ -266,93 +325,133 @@ class _MyHomePageState extends State<MyHomePage> {
                               showDialog(
                                   context: context,
                                   builder: (context) {
-                                    return AlertDialog(
-                                      content: Column(
-                                        children: [
-                                          CachedNetworkImage(
-                                            imageUrl: imageList[index],
-                                            placeholder: (context, url) =>
-                                                const CircularProgressIndicator(),
-                                          ),
-                                          SizedBox(
-                                            height: 20,
-                                          ),
-                                          Row(
+                                    return StatefulBuilder(
+                                      builder: (context, setState) {
+                                        return AlertDialog(
+                                          content: Column(
                                             children: [
-                                              Expanded(
-                                                child: Container(
-                                                  alignment:
-                                                      Alignment.topCenter,
-                                                  child: InkWell(
-                                                    onTap: () async {
-                                                      if (!await launchUrl(
-                                                          Uri.parse(
-                                                              urlList[index]),
-                                                          mode: LaunchMode
-                                                              .externalApplication)) {}
-                                                    },
-                                                    child: Text(
-                                                      titleList[index],
-                                                      style: TextStyle(
-                                                        color: Colors.blue,
+                                              CachedNetworkImage(
+                                                imageUrl: currentData[index]
+                                                        ["images"]["jpg"]
+                                                    ["image_url"],
+                                                placeholder: (context, url) =>
+                                                    const CircularProgressIndicator(),
+                                              ),
+                                              SizedBox(
+                                                height: 20,
+                                              ),
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Container(
+                                                      alignment:
+                                                          Alignment.topCenter,
+                                                      child: InkWell(
+                                                        onTap: () async {
+                                                          if (!await launchUrl(
+                                                              Uri.parse(
+                                                                  currentData[
+                                                                          index]
+                                                                      ["url"]),
+                                                              mode: LaunchMode
+                                                                  .externalApplication)) {}
+                                                        },
+                                                        child: Text(
+                                                          currentData[index]
+                                                              ['title'],
+                                                          style: TextStyle(
+                                                            color: Colors.blue,
+                                                          ),
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
+                                                  Visibility(
+                                                    maintainInteractivity:
+                                                        false,
+                                                    visible: !favoritedResults[
+                                                        index],
+                                                    child: Expanded(
+                                                      child: Container(
+                                                          alignment: Alignment
+                                                              .topRight,
+                                                          child: IconButton(
+                                                            icon: Icon(
+                                                              Icons.star_border,
+                                                              color: Colors
+                                                                  .orangeAccent,
+                                                            ),
+                                                            onPressed: () {
+                                                              setState(() {
+                                                                favoritedResults[
+                                                                        index] =
+                                                                    true;
+                                                                favorites.add(
+                                                                    currentData[
+                                                                        index]);
+                                                                saveFavorites();
+                                                              });
+                                                            },
+                                                          )),
+                                                    ),
+                                                  ),
+                                                  Visibility(
+                                                    maintainInteractivity:
+                                                        false,
+                                                    visible:
+                                                        favoritedResults[index],
+                                                    child: Expanded(
+                                                      child: Container(
+                                                          alignment: Alignment
+                                                              .topRight,
+                                                          child: IconButton(
+                                                            icon: Icon(
+                                                              Icons.star,
+                                                              color: Colors
+                                                                  .orangeAccent,
+                                                            ),
+                                                            onPressed: () {
+                                                              setState(() {
+                                                                favoritedResults[
+                                                                        index] =
+                                                                    false;
+                                                                favorites.removeWhere((element) =>
+                                                                    element[
+                                                                        "mal_id"] ==
+                                                                    currentData[
+                                                                            index]
+                                                                        [
+                                                                        "mal_id"]);
+                                                                saveFavorites();
+                                                              });
+                                                            },
+                                                          )),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              SizedBox(
+                                                height: 5,
+                                              ),
+                                              SizedBox(
+                                                height: 5,
+                                              ),
+                                              Expanded(
+                                                child: SingleChildScrollView(
+                                                  child: Text(currentData[index]
+                                                      ["synopsis"]),
                                                 ),
                                               ),
-                                              if (!favoritedResults[index])
-                                                Expanded(
-                                                  child: Container(
-                                                      alignment:
-                                                          Alignment.topRight,
-                                                      child: IconButton(
-                                                        icon: Icon(
-                                                          Icons.star_border,
-                                                          color: Colors
-                                                              .orangeAccent,
-                                                        ),
-                                                        onPressed: () {
-                                                          favoritedResults[
-                                                              index] = true;  // TODO SET STATE INSTEAD
-                                                        },
-                                                      )),
-                                                ),
-                                              if (favoritedResults[index])
-                                                Expanded(
-                                                  child: Container(
-                                                      alignment:
-                                                          Alignment.topRight,
-                                                      child: IconButton(
-                                                        icon: Icon(
-                                                          Icons.star,
-                                                          color: Colors
-                                                              .orangeAccent,
-                                                        ),
-                                                        onPressed: () {
-                                                          favoritedResults[
-                                                              index] = false; // TODO SET STATE INSTEAD
-                                                        },
-                                                      )),
-                                                ),
                                             ],
                                           ),
-                                          SizedBox(
-                                            height: 5,
-                                          ),
-                                          SizedBox(
-                                            height: 5,
-                                          ),
-                                          Expanded(
-                                              child: SingleChildScrollView(
-                                                  child:
-                                                      Text(blurbList[index]))),
-                                        ],
-                                      ),
+                                        );
+                                      },
                                     );
                                   });
                             },
                             child: CachedNetworkImage(
-                              imageUrl: imageList[index],
+                              imageUrl: currentData[index]["images"]["jpg"]
+                                  ["image_url"],
                               placeholder: (context, url) =>
                                   const CircularProgressIndicator(),
                             ),
@@ -378,6 +477,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             break;
                           case 2:
                             clearLists();
+                            loadFavorites();
                             break;
                         }
                       });
@@ -429,18 +529,22 @@ class _MyHomePageState extends State<MyHomePage> {
 
     if (jData["data"] != null) {
       for (int i = 0; i < jData["data"].length; i++) {
+        if (!showNSFW &&
+            (jData["data"][i]["rating"] == "R - 17+" ||
+                jData["data"][i]["rating"] == "Rx - Hentai")) {
+          continue;
+        }
         setState(() {
-          urlList.add(jData["data"][i]['url']);
-          imageList.add(jData["data"][i]["images"]["jpg"]["image_url"]);
-          titleList.add(jData["data"][i]["title"]);
-          if (jData["data"][i]["synopsis"] != null) {
-            blurbList.add(jData["data"][i]["synopsis"]);
+          currentData.add(jData["data"][i]);
+          bool didSetFavorite = false;
+          for (int j = 0; j < favorites.length; j++) {
+            if (favorites[j]["mal_id"] == currentData[i]["mal_id"]) {
+              favoritedResults.add(true);
+              didSetFavorite = true;
+              break;
+            }
           }
-          if (jData["data"][i]["mal_id"] != null) {
-            malIDList.add(jData["data"][i]["mal_id"]);
-          }
-
-          favoritedResults.add(false);
+          if (!didSetFavorite) favoritedResults.add(false);
         });
       }
 
@@ -484,22 +588,27 @@ class _MyHomePageState extends State<MyHomePage> {
 
       if (jData["data"] != null) {
         for (int i = 0; i < jData["data"].length; i++) {
+          if (!showNSFW &&
+              (jData["data"][i]["rating"] == "R - 17+" ||
+                  jData["data"][i]["rating"] == "Rx - Hentai")) {
+            continue;
+          }
           setState(() {
-            urlList.add(jData["data"][i]['url']);
-            imageList.add(jData["data"][i]["images"]["jpg"]["image_url"]);
-            titleList.add(jData["data"][i]["title"]);
-            if (jData["data"][i]["synopsis"] != null) {
-              blurbList.add(jData["data"][i]["synopsis"]);
+            currentData.add(jData["data"][i]);
+            bool didSetFavorite = false;
+            for (int j = 0; j < favorites.length; j++) {
+              if (favorites[j]["mal_id"] == currentData[currentData.length-1]["mal_id"]) {
+                favoritedResults.add(true);
+                didSetFavorite = true;
+                break;
+              }
             }
-            if (jData["data"][i]["mal_id"] != null) {
-              malIDList.add(jData["data"][i]["mal_id"]);
-            }
-            favoritedResults.add(false);
+            if (!didSetFavorite) favoritedResults.add(false);
           });
         }
         if (jData["pagination"]["has_next_page"] &&
             pageNumber < (int.parse(resultsToShow!) / 25) &&
-            imageList.length < int.parse(resultsToShow!)) {
+            currentData.length < int.parse(resultsToShow!)) {
           pageNumber++;
 
           if (ratingQuery != null) {
@@ -509,9 +618,9 @@ class _MyHomePageState extends State<MyHomePage> {
           }
         } else {
           pageNumber = 1;
-          if (imageList.length > int.parse(resultsToShow!)) {
-            imageList.removeRange(int.parse(resultsToShow!), imageList.length);
-            titleList.removeRange(int.parse(resultsToShow!), titleList.length);
+          if (currentData.length > int.parse(resultsToShow!)) {
+            currentData.removeRange(
+                int.parse(resultsToShow!), currentData.length);
           }
           setState(() {
             isSearching = false;
@@ -522,43 +631,50 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future loadFavorites() async {
-    // TODO
+  loadFavorites() {
+    String? m = prefs.getString('favoritesMap');
+    var myMap = jsonDecode(m!);
+    setState(() {
+      for (int i = 0; i < myMap.length; i++) {
+        currentData.add(myMap[i]);
+        favoritedResults.add(true);
+        bool shouldAdd = true;
+        for (int j = 0; j < favorites.length; j++) {
+          if (favorites[j]["mal_id"] == currentData[i]["mal_id"]) {
+            shouldAdd = false;
+            break;
+          }
+        }
+
+        if (shouldAdd) {
+          favorites.add(myMap[i]);
+        }
+      }
+    });
   }
 
-  Future saveFavorites() async {
-    // TODO
+  loadLastText() {
+    String? str = prefs.getString("lastSearched");
+
+    setState(() {
+      _field01.text = str!;
+    });
+  }
+
+  saveLastText() {
+    prefs.setString("lastSearched", _field01.text);
+  }
+
+  saveFavorites() {
+    String mapData = json.encode(favorites);
+    prefs.setString('favoritesMap', mapData);
   }
 
   void clearLists() {
     setState(() {
       shouldDoDefault = true;
-      imageList.clear();
-      titleList.clear();
-      blurbList.clear();
-      malIDList.clear();
+      currentData.clear();
       favoritedResults.clear();
     });
-  }
-}
-
-class favoritedButton extends StatelessWidget {
-  const favoritedButton({
-    Key? key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-          alignment: Alignment.topRight,
-          child: IconButton(
-            icon: Icon(
-              Icons.star,
-              color: Colors.orangeAccent,
-            ),
-            onPressed: () {},
-          )),
-    );
   }
 }
