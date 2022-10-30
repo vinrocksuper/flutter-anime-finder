@@ -145,11 +145,14 @@ class _MyHomePageState extends State<MyHomePage> {
                               child: Text(
                                   "Anime Finder by Vincent Li for IGME 340"),
                             ),
+                            SizedBox(
+                              height: 10,
+                            ),
                             Row(
                               children: [
                                 Text("Enable NSFW Results?"),
                                 SizedBox(
-                                  width: 15,
+                                  width: 57,
                                 ),
                                 FlutterSwitch(
                                     value: showNSFW,
@@ -159,7 +162,189 @@ class _MyHomePageState extends State<MyHomePage> {
                                       });
                                     }),
                               ],
-                            )
+                            ),
+                            SizedBox(
+                              height: 15,
+                            ),
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  Text("Documentation! (yay!)"),
+                                  SizedBox(
+                                    height: 10,
+                                  ),
+                                  InkWell(
+                                    onTap: () async {
+                                      if (!await launchUrl(
+                                          Uri.parse(
+                                              "https://docs.api.jikan.moe/"),
+                                          mode: LaunchMode
+                                              .externalApplication)) {}
+                                    },
+                                    child: Text(
+                                      textAlign: TextAlign.center,
+                                      "Data, Anime source images from JIKAN MAL API V4",
+                                      style: TextStyle(
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: 10,
+                                  ),
+                                  InkWell(
+                                    onTap: () async {
+                                      if (!await launchUrl(
+                                          Uri.parse(
+                                              "https://stackoverflow.com/questions/51962272/how-to-refresh-an-alertdialog-in-flutter"),
+                                          mode: LaunchMode
+                                              .externalApplication)) {}
+                                    },
+                                    child: Text(
+                                      "How to refresh an alert dialog?",
+                                      style: TextStyle(
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: 10,
+                                  ),
+                                  InkWell(
+                                    onTap: () async {
+                                      if (!await launchUrl(
+                                          Uri.parse("https://api.flutter.dev/"),
+                                          mode: LaunchMode
+                                              .externalApplication)) {}
+                                    },
+                                    child: Text(
+                                      textAlign: TextAlign.center,
+                                      "Various Officially Supported Widgets",
+                                      style: TextStyle(
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: 10,
+                                  ),
+                                  InkWell(
+                                    onTap: () async {
+                                      if (!await launchUrl(
+                                          Uri.parse(
+                                              "https://github.com/lucidchin/IGME-340-Shared"),
+                                          mode: LaunchMode
+                                              .externalApplication)) {}
+                                    },
+                                    child: Text(
+                                      "IGME-340-Shared Repo",
+                                      style: TextStyle(
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: 10,
+                                  ),
+                                  InkWell(
+                                    onTap: () async {
+                                      if (!await launchUrl(
+                                          Uri.parse(
+                                              "https://pub.dev/packages/cached_network_image"),
+                                          mode: LaunchMode
+                                              .externalApplication)) {}
+                                    },
+                                    child: Text(
+                                      textAlign: TextAlign.center,
+                                      "Cached Network Images package",
+                                      style: TextStyle(
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: 10,
+                                  ),
+                                  InkWell(
+                                    onTap: () async {
+                                      if (!await launchUrl(
+                                          Uri.parse(
+                                              "https://pub.dev/packages/shared_preferences"),
+                                          mode: LaunchMode
+                                              .externalApplication)) {}
+                                    },
+                                    child: Text(
+                                      "Shared Preferences package",
+                                      style: TextStyle(
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: 10,
+                                  ),
+                                  InkWell(
+                                    onTap: () async {
+                                      if (!await launchUrl(
+                                          Uri.parse(
+                                              "https://pub.dev/packages/flutter_switch"),
+                                          mode: LaunchMode
+                                              .externalApplication)) {}
+                                    },
+                                    child: Text(
+                                      "Flutter Switch package",
+                                      style: TextStyle(
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: 10,
+                                  ),
+                                  InkWell(
+                                    onTap: () async {
+                                      if (!await launchUrl(
+                                          Uri.parse(
+                                              "https://fonts.google.com/specimen/Staatliches"),
+                                          mode: LaunchMode
+                                              .externalApplication)) {}
+                                    },
+                                    child: Text(
+                                      "Staatliches googlefonts",
+                                      style: TextStyle(
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: 10,
+                                  ),
+                                  Row(
+                                    children: [
+                                      Text("This Image: "),
+                                      InkWell(
+                                        onTap: () async {
+                                          if (!await launchUrl(
+                                              Uri.parse(
+                                                  "https://64.media.tumblr.com/eca7c1a0c4df7688d52cf781e53142d1/3e3c47d5fa9f904a-71/s540x810/1ee4b3b16a25a49c4f61326f895cbf341088041e.jpg"),
+                                              mode: LaunchMode
+                                                  .externalApplication)) {}
+                                        },
+                                        child: Text(
+                                          "SPY X FAMILY image from tumblr",
+                                          style: TextStyle(
+                                            color: Colors.blue,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  CachedNetworkImage(
+                                      imageUrl:
+                                          "https://64.media.tumblr.com/eca7c1a0c4df7688d52cf781e53142d1/3e3c47d5fa9f904a-71/s540x810/1ee4b3b16a25a49c4f61326f895cbf341088041e.jpg")
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       );
@@ -513,12 +698,14 @@ class _MyHomePageState extends State<MyHomePage> {
         ));
   }
 
+  // Refactored for DRY purposes
   Future getAPIResponse(String url) async {
     String fullURL = url;
     var response = await http.get(Uri.parse(fullURL));
     return jsonDecode(response.body);
   }
 
+  // Finds the currently airing anime
   Future findSeasonal() async {
     String customURL = seasonalAPI.replaceAll('{0}', pageNumber.toString());
     setState(() {
@@ -528,25 +715,7 @@ class _MyHomePageState extends State<MyHomePage> {
     var jData = await getAPIResponse(customURL);
 
     if (jData["data"] != null) {
-      for (int i = 0; i < jData["data"].length; i++) {
-        if (!showNSFW &&
-            (jData["data"][i]["rating"] == "R - 17+" ||
-                jData["data"][i]["rating"] == "Rx - Hentai")) {
-          continue;
-        }
-        setState(() {
-          currentData.add(jData["data"][i]);
-          bool didSetFavorite = false;
-          for (int j = 0; j < favorites.length; j++) {
-            if (favorites[j]["mal_id"] == currentData[i]["mal_id"]) {
-              favoritedResults.add(true);
-              didSetFavorite = true;
-              break;
-            }
-          }
-          if (!didSetFavorite) favoritedResults.add(false);
-        });
-      }
+      doSearch(jData);
 
       if (jData["pagination"]["has_next_page"]) {
         pageNumber++;
@@ -560,7 +729,33 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  // Refactored for DRY purposes
+  Future doSearch(jData) async {
+    for (int i = 0; i < jData["data"].length; i++) {
+      if (!showNSFW &&
+          (jData["data"][i]["rating"] == "R - 17+" ||
+              jData["data"][i]["rating"] == "Rx - Hentai")) {
+        continue;
+      }
+      setState(() {
+        currentData.add(jData["data"][i]);
+        bool didSetFavorite = false;
+        for (int j = 0; j < favorites.length; j++) {
+          if (favorites[j]["mal_id"] ==
+              currentData[currentData.length - 1]["mal_id"]) {
+            favoritedResults.add(true);
+            didSetFavorite = true;
+            break;
+          }
+        }
+        if (!didSetFavorite) favoritedResults.add(false);
+      });
+    }
+  }
+
   bool shouldDoDefault = true;
+  // Finds anime with custom query, unsure how they get the results TBH,
+  // they have some sort of soft search and keywords
   Future findCustom({ratingQuery}) async {
     String customURL = searchAPI.replaceAll('{0}', _field01.text);
 
@@ -586,26 +781,10 @@ class _MyHomePageState extends State<MyHomePage> {
       });
       var jData = await getAPIResponse(customURL);
 
+      // most of this is similar, except the data handling in the specific search will be limited to 25 by default and up to 100
+      // the current seasonal animes will display everything, which usually lies in the ballpark of 50
       if (jData["data"] != null) {
-        for (int i = 0; i < jData["data"].length; i++) {
-          if (!showNSFW &&
-              (jData["data"][i]["rating"] == "R - 17+" ||
-                  jData["data"][i]["rating"] == "Rx - Hentai")) {
-            continue;
-          }
-          setState(() {
-            currentData.add(jData["data"][i]);
-            bool didSetFavorite = false;
-            for (int j = 0; j < favorites.length; j++) {
-              if (favorites[j]["mal_id"] == currentData[currentData.length-1]["mal_id"]) {
-                favoritedResults.add(true);
-                didSetFavorite = true;
-                break;
-              }
-            }
-            if (!didSetFavorite) favoritedResults.add(false);
-          });
-        }
+        doSearch(jData);
         if (jData["pagination"]["has_next_page"] &&
             pageNumber < (int.parse(resultsToShow!) / 25) &&
             currentData.length < int.parse(resultsToShow!)) {
@@ -631,6 +810,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  // Loads in favorited anime from sharedprefs
   loadFavorites() {
     String? m = prefs.getString('favoritesMap');
     var myMap = jsonDecode(m!);
@@ -653,6 +833,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // Loads in last searched text from sharedprefs
   loadLastText() {
     String? str = prefs.getString("lastSearched");
 
@@ -661,15 +842,20 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // Saves the last searched text to sharedprefs
   saveLastText() {
     prefs.setString("lastSearched", _field01.text);
   }
 
+  // Saves favorited anime to shareprefs
   saveFavorites() {
     String mapData = json.encode(favorites);
     prefs.setString('favoritesMap', mapData);
   }
 
+  // Clears all relevant data
+  // Note the misnomer with favoritedResults in that it refers to whether or not
+  // an anime should display if it was favorited
   void clearLists() {
     setState(() {
       shouldDoDefault = true;
